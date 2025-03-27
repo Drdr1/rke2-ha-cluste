@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rke2-config-{{ .Release.Name }}
+  namespace: default
+data:
+  config.yaml: |
+    token: kachingkaching
+    tls-san:
+    - rancher0{{ add .Release.Revision 1 }}-{{ .Release.Name }}
+    - rancher0{{ add .Release.Revision 1 }}-{{ .Release.Name }}.{{ .Values.network.domain }}
+    - {{ .Values.network.clusterDomain }}
+    - {{ index .Values.network.staticIps (sub (add .Release.Revision 1) 1) }}
+    cni:
+    - calico
+    {{ if eq (add .Release.Revision 1) 1 }}
+    # First node doesn't need server reference
+    {{ else }}
+    server: https://{{ .Values.network.clusterDomain }}:9345
+    {{ end }}

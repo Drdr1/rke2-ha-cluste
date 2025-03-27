@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-vip-config-{{ .Release.Name }}
+  namespace: kube-system
+data:
+  kube-vip.yaml: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: kube-vip
+      namespace: kube-system
+    spec:
+      selector:
+        matchLabels:
+          name: kube-vip
+      template:
+        metadata:
+          labels:
+            name: kube-vip
+        spec:
+          containers:
+          - name: kube-vip
+            image: docker.io/plndr/kube-vip:{{ .Values.kubeVip.version }}
+            args:
+            - manifest
+            - daemonset
+            - --arp
+            - --interface={{ .Values.kubeVip.interface }}
+            - --address={{ .Values.kubeVip.vip }}
+            - --controlplane
+            - --leaderElection
+            - --taint
+            - --services
+            - --inCluster

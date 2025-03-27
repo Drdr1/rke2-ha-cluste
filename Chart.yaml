@@ -1,0 +1,4 @@
+apiVersion: v2
+name: rke2-ha-cluster
+description: RKE2 HA Cluster with Kube-VIP and Rancher Prime
+version: 0.1.0
