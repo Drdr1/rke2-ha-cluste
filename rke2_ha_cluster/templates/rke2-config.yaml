@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rke2-config-{{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: |
+    tls-san:
+      - {{ .Values.rancher.hostname }}
+      - {{ .Values.kubeVip.vip }}
+    cluster-cidr: "10.42.0.0/16"
+    service-cidr: "10.43.0.0/16"
+    cluster-dns: "10.43.0.10"
+    cni: "calico"

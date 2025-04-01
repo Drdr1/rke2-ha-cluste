@@ -1,0 +1,4 @@
+apiVersion: v2
+name: rke2-ha-cluster
+description: Deploy RKE2 HA cluster with Kube-VIP on Harvester VMs
+version: 0.1.0
