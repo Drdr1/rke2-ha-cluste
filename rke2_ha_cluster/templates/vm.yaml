@@ -34,21 +34,19 @@ spec:
               bootOrder: 1
               disk:
                 bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
           interfaces:
             - name: nic-0
-              interface: bridge
               model: virtio
-              masquerade: {}
-              ports:
-                - name: static-ip
-                  port: 22
-                  protocol: TCP
+              bridge: {}
       volumes:
         - name: disk-0
           persistentVolumeClaim:
             claimName: "rke2-node-{{ add $i 1 }}-{{ $.Release.Name }}-disk"
         - name: cloudinit
-          cloudInitDisk:
+          cloudInitNoCloud:
             userData: |
               #cloud-config
               users:
@@ -79,8 +77,9 @@ spec:
                   - {{ if eq $i 0 }}1{{ else }}0{{ end }}
       networks:
         - name: nic-0
-          network:
-            name: {{ $.Values.network.name }}
+          multus:
+            networkName: {{ $.Values.network.name }}
+          default: true
           pod:
             ip: {{ $ip }}
 ---
