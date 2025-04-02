@@ -1,4 +1,4 @@
-{{- range $i, $ip := .Values.staticIps }}
+{{- range $i := until (int .Values.nodeCount) }}
 apiVersion: harvesterhci.io/v1beta1
 kind: VirtualMachine
 metadata:
@@ -79,8 +79,5 @@ spec:
         - name: nic-0
           multus:
             networkName: {{ $.Values.network.name }}
-          default: true
-          pod:
-            ip: {{ $ip }}
 ---
 {{- end }}
