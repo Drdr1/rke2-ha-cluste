@@ -8,9 +8,25 @@ data:
     #!/bin/bash
     set -e
     IS_FIRST_NODE=$1
+    NODE_INDEX=$2
     VIP="{{ .Values.kubeVip.vip }}"
     FIRST_NODE_IP="{{ index .Values.staticIps 0 }}"
+    STATIC_IP="{{ index .Values.staticIps $NODE_INDEX }}"
     echo "Starting RKE2 installation at $(date)" > /tmp/rke2-install.log
+
+    # Set static IP
+    cat <<EOF > /etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      ethernets:
+        {{ .Values.network.interface }}:
+          addresses:
+            - \$STATIC_IP/24
+          gateway4: 10.31.42.1  # Adjust gateway as needed
+          nameservers:
+            addresses: [8.8.8.8, 8.8.4.4]
+    EOF
+    netplan apply
 
     # Install prerequisites
     apt update -y && apt install -y curl >> /tmp/rke2-install.log 2>&1 || { echo "Failed to install curl"; exit 1; }
@@ -23,25 +39,22 @@ data:
     if [ "$IS_FIRST_NODE" -eq 1 ]; then
       systemctl enable rke2-server.service
       systemctl start rke2-server.service
-      sleep 60  # Wait for RKE2 to stabilize
-      # Install Kube-VIP
+      sleep 60
       curl -s https://kube-vip.io/manifests/rbac.yaml > /var/lib/rancher/rke2/server/manifests/kube-vip-rbac.yaml
       crictl pull docker.io/plndr/kube-vip:{{ .Values.kubeVip.version }}
       ctr --namespace k8s.io run --rm --net-host docker.io/plndr/kube-vip:{{ .Values.kubeVip.version }} vip /kube-vip manifest daemonset \
         --arp \
-        --interface {{ .Values.kubeVip.interface }} \
+        --interface {{ .Values.network.interface }} \
         --address {{ .Values.kubeVip.vip }} \
         --controlplane \
         --leaderElection \
         --taint \
         --services \
-        --inCluster > /var/lib/rancher/rke2/server/manifests/kube-vip.yaml
-      # Install Helm and Cert-Manager
+        --inCluster > /var/lib/ranger/rke2/server/manifests/kube-vip.yaml
       curl -#L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       helm repo add jetstack https://charts.jetstack.io --force-update
       helm upgrade -i cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set installCRDs=true
     else
-      # Wait for Node 1 to be ready with Kube-VIP
       until curl -k -s https://$VIP:9345/ping; do
         echo "Waiting for VIP ($VIP) to be reachable..." >> /tmp/rke2-install.log
         sleep 10
@@ -53,7 +66,6 @@ data:
       systemctl start rke2-server.service
     fi
 
-    # Set up kubectl
     KUBECTL_PATH=$(find /var/lib/rancher/rke2/data/ -name kubectl | head -n 1)
     if [ -n "$KUBECTL_PATH" ]; then
       ln -sf "$KUBECTL_PATH" /usr/local/bin/kubectl
