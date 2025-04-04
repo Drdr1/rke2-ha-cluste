@@ -12,24 +12,30 @@ data:
     STATIC_IP=$3
     VIP="{{ .Values.kubeVip.vip }}"
     FIRST_NODE_IP="{{ index .Values.staticIps 0 }}"
-    GATEWAY="10.31.42.1"  # Adjust to your network's gateway
+    GATEWAY="{{ .Values.network.gateway }}"
+    DNS_SERVERS="{{ join "," .Values.network.dns }}"
     echo "Starting RKE2 installation at $(date)" > /tmp/rke2-install.log
 
-    # Set static IP
+    # Set static IP, gateway, and DNS
     echo "Setting static IP $STATIC_IP on {{ .Values.network.interface }}..." >> /tmp/rke2-install.log
     cat <<EOF > /etc/netplan/01-netcfg.yaml
     network:
       version: 2
       ethernets:
         {{ .Values.network.interface }}:
+          dhcp4: no
           addresses:
             - $STATIC_IP/24
           gateway4: $GATEWAY
           nameservers:
-            addresses: [8.8.8.8, 8.8.4.4]
+            addresses: [$DNS_SERVERS]
     EOF
     netplan apply >> /tmp/rke2-install.log 2>&1 || { echo "Failed to apply netplan"; exit 1; }
-    sleep 10  # Wait for network to stabilize
+    sleep 30  # Increased to ensure network stabilizes
+
+    # Verify IP assignment
+    ip addr show {{ .Values.network.interface }} >> /tmp/rke2-install.log 2>&1
+    echo "IP configuration applied" >> /tmp/rke2-install.log
 
     # Install prerequisites
     apt update -y && apt install -y curl >> /tmp/rke2-install.log 2>&1 || { echo "Failed to install curl"; exit 1; }
