@@ -9,9 +9,9 @@ data:
     set -e
     IS_FIRST_NODE=$1
     NODE_INDEX=$2
+    STATIC_IP=$3
     VIP="{{ .Values.kubeVip.vip }}"
     FIRST_NODE_IP="{{ index .Values.staticIps 0 }}"
-    STATIC_IP=$(echo "{{ range $i, $ip := .Values.staticIps }}{{ if eq $i $NODE_INDEX }}{{ $ip }}{{ end }}{{ end }}" | sed "s/ /\n/g" | grep -v '^$')
     GATEWAY="10.31.42.1"  # Adjust to your network's gateway
     echo "Starting RKE2 installation at $(date)" > /tmp/rke2-install.log
 
