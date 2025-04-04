@@ -65,17 +65,18 @@ spec:
                   permissions: "0755"
                   content: |
                     {{ $.Files.Get "install-script.yaml" | indent 20 | regexReplaceAll ".*install.sh: |" "" }}
-             runcmd:
-               - - mkdir
-                 - -p
-                 - /etc/rancher/rke2-config
-               - - cp
-                 - /etc/rancher/rke2-config/config.yaml
-                 - /etc/rancher/rke2-config/rke2-config.yaml
-               - - bash
-                 - /etc/rancher/rke2-config/install.sh
-                 - {{ if eq $i 0 }}1{{ else }}0{{ end }}
-                 - {{ $i }}
+              runcmd:
+                - - mkdir
+                  - -p
+                  - /etc/rancher/rke2-config
+                - - cp
+                  - /etc/rancher/rke2-config/config.yaml
+                  - /etc/rancher/rke2-config/rke2-config.yaml
+                - - bash
+                  - /etc/rancher/rke2-config/install.sh
+                  - {{ if eq $i 0 }}1{{ else }}0{{ end }}
+                  - {{ $i }}
+                  - {{ index $.Values.staticIps $i }}
       networks:
         - name: nic-0
           multus:
